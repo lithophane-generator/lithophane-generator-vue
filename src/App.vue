@@ -1,37 +1,74 @@
 <template>
-	<nav class="navbar navbar-dark navbar-expand-md bg-dark">
-		<div class="container-fluid">
-			<a class="navbar-brand" href="/"><img src="/Logo-128.png" alt="Logo" height="64"></a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-nav" aria-controls="navbar-nav" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbar-nav">
-				<ul class="navbar-nav">
-					<li class="nav-item">
-						<router-link to="/" class="nav-link">Home</router-link>
-					</li>
-					<li class="nav-item">
-						<router-link to="/about" class="nav-link">About</router-link>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</nav>
-	<router-view/>
+	<header>
+		<nav>
+			<ul>
+				<li><a href="/"><img class="logo" src="/Logo-128.png" alt="Logo"></a></li>
+			</ul>
+			<ul class="nav-links">
+				<li>
+					<router-link to="/">Home</router-link>
+				</li>
+				<li>
+					<router-link to="/about">About</router-link>
+				</li>
+			</ul>
+		</nav>
+	</header>
+	<main>
+		<router-view v-slot="{ Component }">
+			<keep-alive>
+				<component :is="Component"/>
+			</keep-alive>
+		</router-view>
+	</main>
+	<!-- <footer></footer> -->
 </template>
 
 <style lang="scss">
-	#app {
-		font-family: Avenir, Helvetica, Arial, sans-serif;
-		-webkit-font-smoothing: antialiased;
-		-moz-osx-font-smoothing: grayscale;
-		text-align: center;
-		color: #2c3e50;
+	body label {
+		display: flex;
+		gap: .5em;
+		align-items: center;
+		input:not([type="checkbox"], [type="radio"]), select, textarea {
+			flex: 1 1 0;
+			width: 0;
+			margin-bottom: 0
+		}
+		margin-bottom: var(--spacing);
+	}
+	.horizontal-fieldset {
+		display: flex;
+		align-items: center;
+		gap: 1em;
+		legend {
+			display: inline;
+			margin: 0;
+			float: left; // https://bugzilla.mozilla.org/show_bug.cgi?id=1230207#c17
+			margin-right: -.5em;
+		}
+		label {
+			margin: 0;
+			input[type="radio"] {
+				margin-right: 0;
+			}
+		}
 	}
 </style>
 
 <style lang="scss" scoped>
-	nav {
+	header {
 		margin-bottom: 1rem;
+		padding: 0 1rem;
+		background-color: rgba(0, 0, 0, .5);
+
+		nav {
+			.logo {
+				height: 64px;
+			}
+
+			.nav-links {
+				margin-right: auto;
+			}
+		}
 	}
 </style>

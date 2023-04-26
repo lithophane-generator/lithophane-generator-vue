@@ -22,5 +22,7 @@ module.exports = {
 		"comma-dangle": ["error", "always-multiline"],
 		"no-tabs": "off",
 		"quote-props": ["error", "always"],
+		"space-before-function-paren": ["error", "never"],
+		"space-infix-ops": "off",
 	},
 };

@@ -1,11 +1,11 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import GeneratorView from "../views/GeneratorView.vue";
 
 const routes: Array<RouteRecordRaw> = [
 	{
 		"path": "/",
 		"name": "home",
-		"component": HomeView,
+		"component": GeneratorView,
 	},
 	{
 		"path": "/about",
