@@ -1,9 +1,9 @@
 <template>
 	<div class="generator">
-		<div>
+		<div class="settings">
 			<label>
 				Image
-				<input type="file" @change="loadFile">
+				<input type="file" @change="loadFile" accept=".jpeg,.jpg,.png,.gif">
 			</label>
 
 			<GeneratorSettings
@@ -18,11 +18,11 @@
 		</div>
 
 		<StlViewer
-			v-if="lithophane !== null"
 			class="model-viewer"
-			:stl="lithophane"
+			:stl="stlModel"
+			:color="stlColor"
+			:doubleSided="stlDoubleSided"
 		/>
-		<div v-else class="model-viewer"></div>
 	</div>
 </template>
 
@@ -31,8 +31,14 @@
 	display: flex;
 	gap: 1em;
 
-	> * {
+	> ::v-deep(*) {
 		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	max-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
+	.settings {
+		overflow-y: auto;
 	}
 }
 </style>
@@ -42,6 +48,8 @@ import { defineComponent } from "vue";
 import GeneratorSettings from "@/components/GeneratorSettings.vue";
 import StlViewer from "@/components/StlViewer.vue";
 import { assert } from "@/util";
+import { ColorRepresentation } from "three";
+import { Vector3PropInterface } from "troisjs/src/core/Object3D";
 
 export default defineComponent({
 	"components": {
@@ -63,14 +71,75 @@ export default defineComponent({
 
 			"wasm": null as typeof import("lithophane_creator_wasm/lithophane_creator")|null,
 			"lithophane": null as Uint8Array|null,
+			// Expressions used to generate the most recent lithophane (used to check if we should show a preview or the lithophane)
+			"generated_expressions": null as [string, string, string]|null,
 		};
 	},
 	"computed": {
-		lithophaneUri(): string|null {
-			if (this.lithophane === null) {
+		// Preview width/height maintains the image aspect ratio but changes the
+		// resolution by dividing by preview scale so that the larger dimension is < 100
+		previewScale(): number {
+			if (typeof this.imageWidth !== "undefined" && typeof this.imageHeight !== "undefined") {
+				return Math.max(this.imageWidth, this.imageHeight) / 100;
+			}
+
+			return 1;
+		},
+		previewWidth(): number {
+			if (typeof this.imageWidth !== "undefined") {
+				return Math.round(this.imageWidth / this.previewScale);
+			}
+
+			return 100;
+		},
+		previewHeight(): number {
+			if (typeof this.imageHeight !== "undefined") {
+				return Math.round(this.imageHeight / this.previewScale);
+			}
+
+			return 100;
+		},
+		// Actual x scale, different from previewScale due to rounding the width
+		previewScaleX(): number {
+			return typeof this.imageWidth !== "undefined" ? this.imageWidth / this.previewWidth : 1;
+		},
+		// Actual y scale, different from previewScale due to rounding the height
+		previewScaleY(): number {
+			return typeof this.imageHeight !== "undefined" ? this.imageHeight / this.previewHeight : 1;
+		},
+		// Whether the expressions have changed since the lithophane was generated
+		expressionsChanged(): boolean {
+			return (
+				this.generated_expressions === null
+				|| this.xExpression !== this.generated_expressions[0]
+				|| this.yExpression !== this.generated_expressions[1]
+				|| this.zExpression !== this.generated_expressions[2]
+			);
+		},
+		preview(): Uint8Array|null {
+			if (this.wasm === null) {
 				return null;
 			}
-			return URL.createObjectURL(new Blob([this.lithophane], { "type": "application/sla" }));
+
+			try {
+				console.log(this.previewScale);
+				return this.wasm.generate_preview(this.xExpression, this.yExpression, this.zExpression, this.previewWidth, this.previewHeight, this.previewScaleX, this.previewScaleY);
+				// return this.wasm.generate_preview(this.xExpression, this.yExpression, this.zExpression, this.previewWidth, this.previewHeight, 1, 1);
+			} catch (e) {
+				return null;
+			}
+		},
+		showLithophane(): boolean {
+			return this.lithophane !== null && !this.expressionsChanged;
+		},
+		stlModel(): Uint8Array|null {
+			return this.showLithophane ? this.lithophane : this.preview;
+		},
+		stlColor(): ColorRepresentation {
+			return this.showLithophane ? "#ffffff" : "#0000ff";
+		},
+		stlDoubleSided(): boolean {
+			return !this.showLithophane;
 		},
 	},
 	"methods": {
@@ -88,10 +157,10 @@ export default defineComponent({
 						assert(e.target !== null && e.target.result instanceof ArrayBuffer);
 						assert(this.wasm !== null);
 						this.imageData = new Uint8Array(e.target.result);
-						console.log(this.imageData);
 						const dimensions = this.wasm.get_image_dimensions(this.imageData);
 						this.imageWidth = dimensions.width;
 						this.imageHeight = dimensions.height;
+						dimensions.free();
 					};
 					reader.readAsArrayBuffer(this.file);
 				} else {
@@ -111,13 +180,15 @@ export default defineComponent({
 			}
 
 			assert(this.wasm !== null);
-			// try {
-			const lithophane = this.wasm.generate_lithophane(this.xExpression, this.yExpression, this.zExpression, this.imageData, 0.5, 3);
-			this.lithophane = lithophane;
-			// } catch (e) {
-			// 	alert(e);
-			// 	console.log(e);
-			// }
+			try {
+				const lithophane = this.wasm.generate_lithophane(this.xExpression, this.yExpression, this.zExpression, this.imageData, 0.5, 3);
+				this.lithophane = lithophane;
+				this.generated_expressions = [this.xExpression, this.yExpression, this.zExpression];
+				console.log(this.lithophane);
+			} catch (e) {
+				alert(e);
+				console.log(e);
+			}
 		},
 	},
 	mounted(): void {

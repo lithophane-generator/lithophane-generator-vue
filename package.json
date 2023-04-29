@@ -10,13 +10,15 @@
 	"dependencies": {
 		"@picocss/pico": "^1.5.9",
 		"core-js": "^3.8.3",
+		"three": "^0.151.3",
+		"troisjs": "^0.3.4",
 		"vue": "^3.2.13",
-		"vue-3d-model": "2.0.0-alpha.4",
 		"vue-router": "^4.0.3"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^5.4.0",
 		"@typescript-eslint/parser": "^5.4.0",
+		"@types/three": "^0.150.2",
 		"@vue/cli-plugin-babel": "~5.0.0",
 		"@vue/cli-plugin-eslint": "~5.0.0",
 		"@vue/cli-plugin-router": "~5.0.0",

@@ -24,5 +24,6 @@ module.exports = {
 		"quote-props": ["error", "always"],
 		"space-before-function-paren": ["error", "never"],
 		"space-infix-ops": "off",
+		"operator-linebreak": ["error", "before"],
 	},
 };

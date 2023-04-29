@@ -2,7 +2,7 @@
 	<header>
 		<nav>
 			<ul>
-				<li><a href="/"><img class="logo" src="/Logo-128.png" alt="Logo"></a></li>
+				<li><a href="/"><img class="logo" src="/Logo-64.png" alt="Logo"></a></li>
 			</ul>
 			<ul class="nav-links">
 				<li>
@@ -25,16 +25,33 @@
 </template>
 
 <style lang="scss">
-	body label {
-		display: flex;
-		gap: .5em;
-		align-items: center;
-		input:not([type="checkbox"], [type="radio"]), select, textarea {
-			flex: 1 1 0;
-			width: 0;
-			margin-bottom: 0
+	:root {
+		--spacing: 1em;
+		--form-element-spacing-horizontal: 1em;
+		--form-element-spacing-vertical: .75em;
+		--nav-element-spacing-vertical: .5rem;
+	}
+	input {
+		font-size: 1em;
+		&:not([type="checkbox"], [type="radio"], [type="range"]) {
+			height: calc(1em * var(--line-height) + var(--form-element-spacing-vertical) * 2 + var(--border-width) * 2);
 		}
-		margin-bottom: var(--spacing);
+	}
+	body {
+		> header, > main, > footer {
+			--block-spacing-vertical: var(--spacing);
+		}
+		> label {
+			display: flex;
+			gap: .5em;
+			align-items: center;
+			input:not([type="checkbox"], [type="radio"]), select, textarea {
+				flex: 1 1 0;
+				width: 0;
+				margin-bottom: 0
+			}
+			margin-bottom: var(--spacing);
+		}
 	}
 	.horizontal-fieldset {
 		display: flex;
@@ -57,7 +74,6 @@
 
 <style lang="scss" scoped>
 	header {
-		margin-bottom: 1rem;
 		padding: 0 1rem;
 		background-color: rgba(0, 0, 0, .5);
 
