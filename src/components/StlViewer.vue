@@ -1,7 +1,7 @@
 <template>
 	<div class="stl-viewer">
 		<Renderer orbitCtrl resize>
-			<Camera :position="{ x: 20, y: 20, z: 20 }"/>
+			<Camera :position="{ x: 100, y: 100, z: 100 }"/>
 			<Scene background="#000000">
 				<PointLight color="#ffffff" :position="{ x: 500000, y: 500000, z: 500000 }" :intensity=".25"/>
 				<PointLight color="#ffffff" :position="{ x: 500000, y: -500000, z: 500000 }" :intensity=".25"/>
@@ -30,7 +30,6 @@ import { Renderer, Camera, Scene, AmbientLight, PointLight } from "troisjs";
 import AxesHelper from "./AxesHelper";
 import StlMesh from "./StlMesh";
 import { ColorRepresentation } from "three";
-import { Vector3PropInterface } from "troisjs/src/core/Object3D";
 
 export default defineComponent({
 	"components": {
@@ -49,7 +48,6 @@ export default defineComponent({
 	},
 	"computed": {
 		stlBuffer(): ArrayBuffer|null {
-			console.log(this.stl);
 			return (typeof this.stl === "undefined" || this.stl === null)
 				? null
 				: this.stl.buffer.slice(this.stl.byteOffset, this.stl.byteLength + this.stl.byteOffset);

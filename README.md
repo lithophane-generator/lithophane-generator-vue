@@ -1,4 +1,4 @@
-# lithophane-creator-vue
+# lithophane-generator-vue
 
 ## Project setup
 ```

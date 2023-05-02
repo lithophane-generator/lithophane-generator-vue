@@ -2,7 +2,7 @@
 	<div class="config-preset-container">
 		<div class="config-presets">
 			<button type="button" @click="settingsType = 'RectangleSettings'">Rectangle</button>
-			<button type="button" @click="settingsType = 'CurveSettings'">Curve</button>
+			<button type="button" @click="settingsType = 'CylinderCurveSettings'">Cylinder Curve</button>
 			<button type="button" @click="settingsType = null">Custom</button>
 		</div>
 		<KeepAlive>
@@ -16,6 +16,7 @@
 							@update:xExpression="$emit('update:xExpression', $event)"
 							@update:yExpression="$emit('update:yExpression', $event)"
 							@update:zExpression="$emit('update:zExpression', $event)"
+							@updatePreview="$emit('updatePreview')"
 						/>
 					</KeepAlive>
 				</div>
@@ -25,15 +26,30 @@
 
 	<label>
 		X Expression:
-		<input :value="xExpression" :disabled="settingsType !== null" @input="$emit('update:xExpression', $event.target.value)">
+		<input
+			:value="xExpression"
+			:disabled="settingsType !== null"
+			@input="$emit('update:xExpression', $event.target.value)"
+			@focusout="$emit('updatePreview')"
+		>
 	</label>
 	<label>
 		Y Expression:
-		<input :value="yExpression" :disabled="settingsType !== null" @input="$emit('update:yExpression', $event.target.value)">
+		<input
+			:value="yExpression"
+			:disabled="settingsType !== null"
+			@input="$emit('update:yExpression', $event.target.value)"
+			@focusout="$emit('updatePreview')"
+		>
 	</label>
 	<label>
 		Z Expression:
-		<input :value="zExpression" :disabled="settingsType !== null" @input="$emit('update:zExpression', $event.target.value)">
+		<input
+			:value="zExpression"
+			:disabled="settingsType !== null"
+			@input="$emit('update:zExpression', $event.target.value)"
+			@focusout="$emit('updatePreview')"
+		>
 	</label>
 </template>
 
@@ -60,14 +76,14 @@
 </style>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
+import { defineComponent, nextTick, PropType } from "vue";
 import RectangleSettings from "./settings/RectangleSettings.vue";
-import CurveSettings from "./settings/CurveSettings.vue";
+import CylinderCurveSettings from "./settings/CylinderCurveSettings.vue";
 import VerticalSlideTransition from "./VerticalSlideTransition.vue";
 
 const settingsTypes = {
 	RectangleSettings,
-	CurveSettings,
+	CylinderCurveSettings,
 } as const;
 
 export default defineComponent({
@@ -91,6 +107,13 @@ export default defineComponent({
 		"update:xExpression",
 		"update:yExpression",
 		"update:zExpression",
+		"updatePreview",
 	],
+	"watch": {
+		async settingsType(): Promise<void> {
+			await nextTick();
+			this.$emit("updatePreview");
+		},
+	},
 });
 </script>

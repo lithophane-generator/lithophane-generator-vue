@@ -2,26 +2,26 @@
 	<fieldset class="horizontal-fieldset">
 		<legend>Plane:</legend>
 		<label>
-			<input type="radio" value="xy" v-model="plane" @change="recalculate">
+			<input type="radio" value="xy" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
 			XY
 		</label>
 		<label>
-			<input type="radio" value="xz" v-model="plane" @change="recalculate">
+			<input type="radio" value="xz" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
 			XZ
 		</label>
 		<label>
-			<input type="radio" value="yz" v-model="plane" @change="recalculate">
+			<input type="radio" value="yz" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
 			YZ
 		</label>
 	</fieldset>
 
 	<label>
-		Horizontal Resolution (px/mm):
-		<input type="number" v-model="hRes" @change="recalculate">
+		Horizontal Resolution (mm/px):
+		<input type="number" v-model="hRes" @input="recalculate">
 	</label>
 	<label>
-		Vertical Resolution (px/mm):
-		<input type="number" v-model="vRes" @change="recalculate">
+		Vertical Resolution (mm/px):
+		<input type="number" v-model="vRes" @input="recalculate">
 	</label>
 
 	<label>
@@ -82,10 +82,10 @@ export default defineComponent({
 			} as const)[this.plane];
 		},
 		width(): number|null {
-			return this.imageWidth ? round((this.imageWidth - 1) * this.hRes, 10) : null;
+			return this.imageWidth ? round((this.imageWidth - 1) * this.hRes, 4) : null;
 		},
 		height(): number|null {
-			return this.imageHeight ? round((this.imageHeight - 1) * this.vRes, 10) : null;
+			return this.imageHeight ? round((this.imageHeight - 1) * this.vRes, 4) : null;
 		},
 	},
 	"methods": {
@@ -107,6 +107,7 @@ export default defineComponent({
 		"update:xExpression",
 		"update:yExpression",
 		"update:zExpression",
+		"updatePreview",
 	],
 });
 </script>

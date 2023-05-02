@@ -9,7 +9,6 @@ export default defineComponent({
 	},
 	mounted() {
 		const axesHelper = new AxesHelper(this.size);
-		console.log(axesHelper);
 		this.initObject3D(axesHelper);
 	},
 });

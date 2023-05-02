@@ -1,5 +1,5 @@
-declare module "lithophane_creator_wasm/lithophane_creator_bg.wasm";
-declare module "lithophane_creator_wasm/lithophane_creator" {
+declare module "lithophane_generator_wasm/lithophane_generator_bg.wasm";
+declare module "lithophane_generator_wasm/lithophane_generator" {
 	/* tslint:disable */
 	/* eslint-disable */
 	/**
@@ -21,11 +21,10 @@ declare module "lithophane_creator_wasm/lithophane_creator" {
 	* @param {string} z_expression
 	* @param {number} width
 	* @param {number} height
-	* @param {number} x_scale
-	* @param {number} y_scale
+	* @param {number} step
 	* @returns {Uint8Array}
 	*/
-	export function generate_preview(x_expression: string, y_expression: string, z_expression: string, width: number, height: number, x_scale: number, y_scale: number): Uint8Array;
+	export function generate_preview(x_expression: string, y_expression: string, z_expression: string, width: number, height: number, step: number): Uint8Array;
 	/**
 	* @param {Uint8Array} image
 	* @returns {ImageDimensions}

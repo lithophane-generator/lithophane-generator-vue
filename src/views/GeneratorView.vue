@@ -10,6 +10,7 @@
 				v-model:xExpression="xExpression"
 				v-model:yExpression="yExpression"
 				v-model:zExpression="zExpression"
+				@updatePreview="generatePreview(100)"
 				:imageWidth="imageWidth"
 				:imageHeight="imageHeight"
 			/>
@@ -29,6 +30,7 @@
 <style scoped lang="scss">
 .generator {
 	display: flex;
+	flex-direction: column;
 	gap: 1em;
 
 	> ::v-deep(*) {
@@ -36,9 +38,16 @@
 		min-width: 0;
 	}
 
-	max-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
-	.settings {
-		overflow-y: auto;
+	.model-viewer {
+		min-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
+	}
+
+	@media (min-aspect-ratio: 3/2) {
+		flex-direction: row;
+		max-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
+		.settings {
+			overflow-y: auto;
+		}
 	}
 }
 </style>
@@ -49,7 +58,6 @@ import GeneratorSettings from "@/components/GeneratorSettings.vue";
 import StlViewer from "@/components/StlViewer.vue";
 import { assert } from "@/util";
 import { ColorRepresentation } from "three";
-import { Vector3PropInterface } from "troisjs/src/core/Object3D";
 
 export default defineComponent({
 	"components": {
@@ -69,43 +77,19 @@ export default defineComponent({
 
 			"imageData": undefined as Uint8Array|undefined,
 
-			"wasm": null as typeof import("lithophane_creator_wasm/lithophane_creator")|null,
+			"wasm": null as typeof import("lithophane_generator_wasm/lithophane_generator")|null,
 			"lithophane": null as Uint8Array|null,
 			// Expressions used to generate the most recent lithophane (used to check if we should show a preview or the lithophane)
 			"generated_expressions": null as [string, string, string]|null,
+			"preview": null as Uint8Array|null,
 		};
 	},
 	"computed": {
-		// Preview width/height maintains the image aspect ratio but changes the
-		// resolution by dividing by preview scale so that the larger dimension is < 100
-		previewScale(): number {
-			if (typeof this.imageWidth !== "undefined" && typeof this.imageHeight !== "undefined") {
-				return Math.max(this.imageWidth, this.imageHeight) / 100;
-			}
-
-			return 1;
-		},
 		previewWidth(): number {
-			if (typeof this.imageWidth !== "undefined") {
-				return Math.round(this.imageWidth / this.previewScale);
-			}
-
-			return 100;
+			return typeof this.imageWidth !== "undefined" ? this.imageWidth : 500;
 		},
 		previewHeight(): number {
-			if (typeof this.imageHeight !== "undefined") {
-				return Math.round(this.imageHeight / this.previewScale);
-			}
-
-			return 100;
-		},
-		// Actual x scale, different from previewScale due to rounding the width
-		previewScaleX(): number {
-			return typeof this.imageWidth !== "undefined" ? this.imageWidth / this.previewWidth : 1;
-		},
-		// Actual y scale, different from previewScale due to rounding the height
-		previewScaleY(): number {
-			return typeof this.imageHeight !== "undefined" ? this.imageHeight / this.previewHeight : 1;
+			return typeof this.imageHeight !== "undefined" ? this.imageHeight : 500;
 		},
 		// Whether the expressions have changed since the lithophane was generated
 		expressionsChanged(): boolean {
@@ -116,20 +100,7 @@ export default defineComponent({
 				|| this.zExpression !== this.generated_expressions[2]
 			);
 		},
-		preview(): Uint8Array|null {
-			if (this.wasm === null) {
-				return null;
-			}
-
-			try {
-				console.log(this.previewScale);
-				return this.wasm.generate_preview(this.xExpression, this.yExpression, this.zExpression, this.previewWidth, this.previewHeight, this.previewScaleX, this.previewScaleY);
-				// return this.wasm.generate_preview(this.xExpression, this.yExpression, this.zExpression, this.previewWidth, this.previewHeight, 1, 1);
-			} catch (e) {
-				return null;
-			}
-		},
-		showLithophane(): boolean {
+		showLithophane(): boolean { // TODO on change instead of input
 			return this.lithophane !== null && !this.expressionsChanged;
 		},
 		stlModel(): Uint8Array|null {
@@ -161,6 +132,7 @@ export default defineComponent({
 						this.imageWidth = dimensions.width;
 						this.imageHeight = dimensions.height;
 						dimensions.free();
+						this.generatePreview(100);
 					};
 					reader.readAsArrayBuffer(this.file);
 				} else {
@@ -184,17 +156,51 @@ export default defineComponent({
 				const lithophane = this.wasm.generate_lithophane(this.xExpression, this.yExpression, this.zExpression, this.imageData, 0.5, 3);
 				this.lithophane = lithophane;
 				this.generated_expressions = [this.xExpression, this.yExpression, this.zExpression];
-				console.log(this.lithophane);
 			} catch (e) {
-				alert(e);
-				console.log(e);
+				console.error(e);
+			}
+		},
+		generatePreview(resolution: number): void {
+			this.preview = null;
+			if (this.wasm === null) {
+				return;
+			}
+
+			// Preview step tells it to step by n vertices so that the preview is lower resolution and generates faster.
+			// Calculate it so that the preview will be at most 100x100 vertices
+			const previewStep = Math.ceil(Math.max(this.previewWidth, this.previewHeight) / resolution);
+
+			try {
+				this.preview = this.wasm.generate_preview(
+					this.xExpression,
+					this.yExpression,
+					this.zExpression,
+					this.previewWidth,
+					this.previewHeight,
+					previewStep,
+				);
+			} catch (e) {
+				// TODO show previous preview as red
+				console.error(e);
 			}
 		},
 	},
+	"watch": {
+		xExpression(): void {
+			this.generatePreview(20);
+		},
+		yExpression(): void {
+			this.generatePreview(20);
+		},
+		zExpression(): void {
+			this.generatePreview(20);
+		},
+	},
 	mounted(): void {
-		import("lithophane_creator_wasm/lithophane_creator").then(wasm => {
+		import("lithophane_generator_wasm/lithophane_generator").then(wasm => {
 			wasm.init();
 			this.wasm = wasm;
+			this.generatePreview(100);
 		}).catch(console.error);
 	},
 });
