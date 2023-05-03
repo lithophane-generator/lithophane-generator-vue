@@ -15,7 +15,18 @@
 				:imageHeight="imageHeight"
 			/>
 
-			<button type="button" @click="generateLithophane">Generate Lithophane</button>
+			<label>
+				File Size:
+				<input disabled :value="lithophaneSize === null ? null : prettyBytes(lithophaneSize)">
+			</label>
+
+			<div class="generator-btns">
+				<button type="button" @click="generateLithophane">Generate Lithophane</button>
+				<a v-if="showLithophane && lithophaneUrl !== null" role="button" :href="lithophaneUrl" download="lithophane.stl">
+					Download Lithophane
+				</a>
+				<button v-else type="button" disabled>Download Lithophane</button>
+			</div>
 		</div>
 
 		<StlViewer
@@ -25,6 +36,17 @@
 			:doubleSided="stlDoubleSided"
 		/>
 	</div>
+
+	<ModalWindow v-if="showSizeWarningModal" @close="showSizeWarningModal = false">
+		<template #title>
+			Large Image
+		</template>
+		<template #body>
+			Large images can cause the lithophane to take much longer to generate, and can increase the STL file size significantly. Using higher
+			resolution images for lithophanes quickly runs into diminishing returns, since 3D printers can only achieve so much detail. Consider
+			lowering the resolution of your image before using it to generate a lithophane.
+		</template>
+	</ModalWindow>
 </template>
 
 <style scoped lang="scss">
@@ -38,10 +60,6 @@
 		min-width: 0;
 	}
 
-	.model-viewer {
-		min-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
-	}
-
 	@media (min-aspect-ratio: 3/2) {
 		flex-direction: row;
 		max-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
@@ -50,19 +68,35 @@
 		}
 	}
 }
+
+.model-viewer {
+	min-height: calc(100vh - var(--nav-element-spacing-vertical) * 2 - 64px - var(--spacing) * 2);
+}
+
+.generator-btns {
+	display: flex;
+	gap: 1em;
+
+	> * {
+		flex: 1 1 0;
+	}
+}
 </style>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import GeneratorSettings from "@/components/GeneratorSettings.vue";
 import StlViewer from "@/components/StlViewer.vue";
+import ModalWindow from "@/components/ModalWindow.vue";
 import { assert } from "@/util";
 import { ColorRepresentation } from "three";
+import prettyBytes from "pretty-bytes";
 
 export default defineComponent({
 	"components": {
 		GeneratorSettings,
 		StlViewer,
+		ModalWindow,
 	},
 	data() {
 		return {
@@ -76,6 +110,8 @@ export default defineComponent({
 			"imageHeight": undefined as number|undefined,
 
 			"imageData": undefined as Uint8Array|undefined,
+
+			"showSizeWarningModal": false,
 
 			"wasm": null as typeof import("lithophane_generator_wasm/lithophane_generator")|null,
 			"lithophane": null as Uint8Array|null,
@@ -112,6 +148,26 @@ export default defineComponent({
 		stlDoubleSided(): boolean {
 			return !this.showLithophane;
 		},
+		lithophaneUrl(): string|null {
+			if (this.lithophane === null) {
+				return null;
+			}
+			return URL.createObjectURL(new Blob([this.lithophane], { "type": "application/sla" }));
+		},
+		lithophaneSize(): number|null {
+			if (typeof this.imageWidth === "undefined" || typeof this.imageHeight === "undefined") {
+				return null;
+			}
+
+			const h = this.imageWidth - 1;
+			const v = this.imageHeight - 1;
+
+			return (
+				(h * v) * 2 // front and back squares
+				+ h * 2 // top and bottom side squares
+				+ v * 2 // left and right side squares
+			) * 2 * 50 + 84; // double squares into trianges, 50 bytes per triangle, 84 byte header
+		},
 	},
 	"methods": {
 		loadFile(e: Event): void {
@@ -131,6 +187,9 @@ export default defineComponent({
 						const dimensions = this.wasm.get_image_dimensions(this.imageData);
 						this.imageWidth = dimensions.width;
 						this.imageHeight = dimensions.height;
+						if (this.imageWidth * this.imageHeight > 1000000) {
+							this.showSizeWarningModal = true;
+						}
 						dimensions.free();
 						this.generatePreview(100);
 					};
@@ -184,6 +243,7 @@ export default defineComponent({
 				console.error(e);
 			}
 		},
+		prettyBytes,
 	},
 	"watch": {
 		xExpression(): void {
