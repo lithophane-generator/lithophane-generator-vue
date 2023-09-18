@@ -6,7 +6,7 @@
 			<button type="button" @click="settingsType = null">Custom</button>
 		</div>
 		<KeepAlive>
-			<VerticalSlideTransition :showIf="settingsType !== null" :hide="true">
+			<VerticalSlideTransition :showIf="settingsType !== null" :hide="true" mode="out-in">
 				<div class="config-preset-settings">
 					<KeepAlive>
 						<component

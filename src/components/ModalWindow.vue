@@ -1,7 +1,7 @@
 <template>
 	<teleport :to="teleportTo" :disabled="noTeleport">
-		<transition appear name="slide-fade">
-			<dialog open>
+		<transition appear name="modal-slide-fade">
+			<dialog open v-if="show">
 				<article>
 					<header>
 						<h3><slot name="title"/></h3>
@@ -47,12 +47,17 @@ header > * {
 	margin-left: auto;
 }
 
-.slide-fade-enter-active, .slide-fade-leave-active {
-	transition: opacity .15s linear, transform .3s ease-out;
+.modal-slide-fade-enter-active, .modal-slide-fade-leave-active {
+	transition: opacity .3s linear, transform .3s ease-out;
+	article {
+		transition: inherit;
+	}
 }
-.slide-fade-enter-from, .slide-fade-leave-to {
-	transform: translate(0, -25%);
+.modal-slide-fade-enter-from, .modal-slide-fade-leave-to {
 	opacity: 0;
+	article {
+		transform: translate(0, -25%);
+	}
 }
 </style>
 
@@ -63,6 +68,7 @@ export default defineComponent({
 	"props": {
 		"teleportTo": { "type": String, "default": "body" },
 		"noTeleport": { "type": Boolean, "default": false },
+		"show": { "type": Boolean, "default": false },
 	},
 	"emits": [
 		"close",

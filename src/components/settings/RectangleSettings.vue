@@ -2,35 +2,35 @@
 	<fieldset class="horizontal-fieldset">
 		<legend>Plane:</legend>
 		<label>
-			<input type="radio" value="xy" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
+			<input type="radio" value="xy" v-model="plane" @focusout="$emit('updatePreview')">
 			XY
 		</label>
 		<label>
-			<input type="radio" value="xz" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
+			<input type="radio" value="xz" v-model="plane" @focusout="$emit('updatePreview')">
 			XZ
 		</label>
 		<label>
-			<input type="radio" value="yz" v-model="plane" @input="recalculate" @focusout="$emit('updatePreview')">
+			<input type="radio" value="yz" v-model="plane" @focusout="$emit('updatePreview')">
 			YZ
 		</label>
 	</fieldset>
 
 	<label>
 		Horizontal Resolution (mm/px):
-		<input type="number" v-model="hRes" @input="recalculate">
+		<input type="number" v-model="hRes" @input="recalculate" @focusout="$emit('updatePreview')">
 	</label>
 	<label>
 		Vertical Resolution (mm/px):
-		<input type="number" v-model="vRes" @input="recalculate">
+		<input type="number" v-model="vRes" @input="recalculate" @focusout="$emit('updatePreview')">
 	</label>
 
 	<label>
 		Width (mm):
-		<input type="number" disabled :value="width">
+		<input type="number" disabled :value="width" @focusout="$emit('updatePreview')">
 	</label>
 	<label>
 		Height (mm):
-		<input type="number" disabled :value="height">
+		<input type="number" disabled :value="height" @focusout="$emit('updatePreview')">
 	</label>
 </template>
 
@@ -109,5 +109,11 @@ export default defineComponent({
 		"update:zExpression",
 		"updatePreview",
 	],
+	"watch": {
+		plane(): void {
+			// This is a watcher instead of a click event listener because the click event listener runs before the model actually updates
+			this.recalculate();
+		},
+	},
 });
 </script>

@@ -10,7 +10,7 @@
 				v-model:xExpression="xExpression"
 				v-model:yExpression="yExpression"
 				v-model:zExpression="zExpression"
-				@updatePreview="generatePreview(100)"
+				@updatePreview="generatePreview(100); maybeShowLithophane()"
 				:imageWidth="imageWidth"
 				:imageHeight="imageHeight"
 			/>
@@ -22,7 +22,12 @@
 
 			<div class="generator-btns">
 				<button type="button" @click="generateLithophane">Generate Lithophane</button>
-				<a v-if="showLithophane && lithophaneUrl !== null" role="button" :href="lithophaneUrl" download="lithophane.stl">
+				<a
+					v-if="showLithophane && lithophaneUrl !== null"
+					role="button"
+					:href="lithophaneUrl"
+					:download="`${file?.name.split('.').slice(0, -1).join('.')}.stl`"
+				>
 					Download Lithophane
 				</a>
 				<button v-else type="button" disabled>Download Lithophane</button>
@@ -37,7 +42,7 @@
 		/>
 	</div>
 
-	<ModalWindow v-if="showSizeWarningModal" @close="showSizeWarningModal = false">
+	<ModalWindow :show="showSizeWarningModal" @close="showSizeWarningModal = false">
 		<template #title>
 			Large Image
 		</template>
@@ -79,6 +84,7 @@
 
 	> * {
 		flex: 1 1 0;
+		margin-bottom: 0;
 	}
 }
 </style>
@@ -88,7 +94,7 @@ import { defineComponent } from "vue";
 import GeneratorSettings from "@/components/GeneratorSettings.vue";
 import StlViewer from "@/components/StlViewer.vue";
 import ModalWindow from "@/components/ModalWindow.vue";
-import { assert } from "@/util";
+import { assert, hasProperty } from "@/util";
 import { ColorRepresentation } from "three";
 import prettyBytes from "pretty-bytes";
 
@@ -115,6 +121,7 @@ export default defineComponent({
 
 			"wasm": null as typeof import("lithophane_generator_wasm/lithophane_generator")|null,
 			"lithophane": null as Uint8Array|null,
+			"showLithophane": false,
 			// Expressions used to generate the most recent lithophane (used to check if we should show a preview or the lithophane)
 			"generated_expressions": null as [string, string, string]|null,
 			"preview": null as Uint8Array|null,
@@ -136,7 +143,7 @@ export default defineComponent({
 				|| this.zExpression !== this.generated_expressions[2]
 			);
 		},
-		showLithophane(): boolean { // TODO on change instead of input
+		showLithophaneAfterChange(): boolean { // TODO on change instead of input
 			return this.lithophane !== null && !this.expressionsChanged;
 		},
 		stlModel(): Uint8Array|null {
@@ -173,12 +180,11 @@ export default defineComponent({
 		loadFile(e: Event): void {
 			if (e.target instanceof HTMLInputElement) {
 				if (e.target?.files?.length === 1) {
-					this.file = e.target.files[0];
+					const file = e.target.files[0];
 
 					const reader = new FileReader();
 					reader.onerror = (e: Event) => {
 						alert(`Error reading file: ${e}`);
-						this.file = null;
 					};
 					reader.onload = (e) => {
 						assert(e.target !== null && e.target.result instanceof ArrayBuffer);
@@ -192,8 +198,10 @@ export default defineComponent({
 						}
 						dimensions.free();
 						this.generatePreview(100);
+						this.file = file;
+						this.lithophane = null;
 					};
-					reader.readAsArrayBuffer(this.file);
+					reader.readAsArrayBuffer(file);
 				} else {
 					this.imageWidth = undefined;
 					this.imageHeight = undefined;
@@ -215,8 +223,12 @@ export default defineComponent({
 				const lithophane = this.wasm.generate_lithophane(this.xExpression, this.yExpression, this.zExpression, this.imageData, 0.5, 3);
 				this.lithophane = lithophane;
 				this.generated_expressions = [this.xExpression, this.yExpression, this.zExpression];
+				this.showLithophane = true;
 			} catch (e) {
 				console.error(e);
+				if (typeof e === "object" && e !== null && hasProperty(e, "message")) {
+					alert(e.message);
+				}
 			}
 		},
 		generatePreview(resolution: number): void {
@@ -238,9 +250,15 @@ export default defineComponent({
 					this.previewHeight,
 					previewStep,
 				);
+				this.showLithophane = false;
 			} catch (e) {
 				// TODO show previous preview as red
 				console.error(e);
+			}
+		},
+		maybeShowLithophane(): void {
+			if (this.showLithophaneAfterChange) {
+				this.showLithophane = true;
 			}
 		},
 		prettyBytes,
